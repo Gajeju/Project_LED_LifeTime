@@ -31,10 +31,10 @@ void loop() {
       if (index2 == 6) index2 = 3;
   }
 
-  if (time[0] == time[1] && time[1] == time[2])
-  {
-    time[0] == 0;
-    time[1] == 0;
-    time[2] == 0;
-  }
-}
+//   if (time[0] == time[1] && time[1] == time[2])
+//   {
+//     time[0] == 0;
+//     time[1] == 0;
+//     time[2] == 0;
+//   }
+// }
