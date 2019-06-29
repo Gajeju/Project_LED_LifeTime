@@ -57,33 +57,43 @@ void output_LED(int step)
 void select_LED(void)
 {
   //배열 복사
-    for (int i = 0; i < 4; i++)
-    {
-      temp[i] = time[i];
-    }
+  for (int i = 0; i < 4; i++)
+  {
+    temp[i] = time[i];
+  }
 
-    //오름차순 정렬
-    for (int i = 0; i < 4; i++)
+  //오름차순 정렬
+  for (int i = 0; i < 4; i++)
+  {
+    for (int j = 0; j < 3; j++ )
+      if (temp[j] >= temp[j + 1])
+      {
+        int m = temp[j + 1];
+        temp[j + 1] = temp[j];
+        temp[j] = m;
+      }
+  }
+  //index 초기화
+  for (int i = 0; i < 4; i++)
+  {
+    for (int j = 0; j < 4; j++)
     {
-      for (int j = 0; j < 3; j++ )
-        if (temp[j] >= temp[j + 1])
-        {
-          int m = temp[j + 1];
-          temp[j + 1] = temp[j];
-          temp[j] = m;
-        }
+      if (time[i] == temp[j]) index[j] = i;
     }
-    //index 초기화
-    for (int i = 0; i < 4; i++)
-    {
-      if (time[i] == temp[0]) index[0] = i;
-      if (time[i] == temp[1]) index[1] = i;
-      if (time[i] == temp[2]) index[2] = i;
-      if (time[i] == temp[3]) index[3] = i;
-    }
+  }
 }
 
-
+//EEPROM 초기화
+void EEP_reset(void)
+{
+  for (int i = 0 ; i < 4 ; i++) {
+    EEPROM.write(i * 2, i);
+  }
+  for (int i = 1; i < 8; i += 2)
+  {
+    EEPROM.write(i, 0);
+  }
+}
 
 
 void setup() {
@@ -128,7 +138,7 @@ void loop() {
     digitalWrite (led4, LOW);
 
     //LED 선택
-    select_LED(); 
+    select_LED();
   }
 
   store();
@@ -147,29 +157,19 @@ void loop() {
 
   if (max > 300 && (max - min) < (max / 5) )
   {
-    for (int i = 0 ; i < 4 ; i++) {
-      EEPROM.write(i * 2, i);
-    }
-    for (int i = 1; i < 8; i += 2)
-    {
-      EEPROM.write(i, 0);
-    }
+    EEP_reset();
     load();
   }
   else if (max == 60000)
   {
-    for (int i = 0 ; i < 4 ; i++) {
-      EEPROM.write(i * 2, i);
-    }
-    for (int i = 1; i < 8; i += 2)
-    {
-      EEPROM.write(i, 0);
-    }
+    EEP_reset();
     load();
   }
 
-  //  Serial.println(cdsValue);
 
+  //시리얼 통신을 이용하여 변수 체크
+  //  Serial.println(cdsValue);
+  
   Serial.println(time[0]);
   Serial.println(time[1]);
   Serial.println(time[2]);
@@ -181,6 +181,5 @@ void loop() {
   Serial.println(min);
   Serial.println(" ");
 
-  delay(50);
-  //  Serial.println(" ");
+  delay(50);  //Lamp 동작 주기 설정
 }
