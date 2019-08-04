@@ -111,10 +111,11 @@ void setup() {
   //    EEPROM.write(i, 0);
   //  }
 
-  if (EEPROM.read(0))
-  {
-    EEP_load();
-  }
+  if (EEPROM.read(0)) EEP_load();
+  
+  //LED 선택
+  LED_select();
+  
   Serial.begin(9600);
 }
 
@@ -123,13 +124,10 @@ void loop() {
   int cdsValue;
   int min, max;
 
-  //LED 선택
-  LED_select();
-
   cdsValue = analogRead(cds);
 
   //cds 값에 따른 LED 개수 설정
-  if      (cdsValue > 200 && cdsValue < 400)         LED_output(4);
+  if      (cdsValue > 200 && cdsValue < 400)    LED_output(4);
   else if (cdsValue > 401 && cdsValue < 600)    LED_output(3);
   else if (cdsValue > 601 && cdsValue < 800)    LED_output(2);
   else if (cdsValue > 801 && cdsValue < 1500)   LED_output(1);
@@ -164,16 +162,18 @@ void loop() {
   
   //  Serial.println(cdsValue);
 
-  Serial.println(time[0]);
-  Serial.println(time[1]);
-  Serial.println(time[2]);
-  Serial.println(time[3]);
+//  Serial.println(time[0]);
+//  Serial.println(time[1]);
+//  Serial.println(time[2]);
+//  Serial.println(time[3]);
+//
+//
+//  Serial.println(" ");
+//  Serial.println(max);
+//  Serial.println(min);
+//  Serial.println(" ");
 
-
-  Serial.println(" ");
-  Serial.println(max);
-  Serial.println(min);
-  Serial.println(" ");
+  Serial.println(cdsValue);
 
   delay(50);  //Lamp 동작 주기 설정
 }
