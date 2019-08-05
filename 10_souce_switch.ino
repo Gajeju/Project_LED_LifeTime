@@ -116,6 +116,7 @@ void setup() {
   //LED 선택
   LED_select();
   
+  
   Serial.begin(9600);
 }
 
