@@ -2,24 +2,24 @@
 
 /*----- 전역변수 -----*/
 
-//핀번호
+#define LED_NUM 12
 
 //2~13 핀 모두 LED로 사용
 int cds = A0;
 
 //데이터 공간
-int time[12] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-int temp[12];
+int time[LED_NUM] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+int temp[LED_NUM];
 
 //LED 지정
-int index[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int index[LED_NUM] = {0,};
 
 /*----- 함수 -----*/
 
 //EEPROM에서 시간데이터 로드
 void EEP_load(void)
 {
-  for (int i = 0; i < 12; i++)
+  for (int i = 0; i < LED_NUM; i++)
   {
     time[i] = EEPROM.read(i * 2) + (EEPROM.read((i * 2) + 1) * 256);
   }
@@ -28,11 +28,11 @@ void EEP_load(void)
 //EEPROM에 저장
 void EEP_store(void)
 {
-  for (int i = 0; i < 24; i += 2)
+  for (int i = 0; i < (LED_NUM * 2); i += 2)
   {
     EEPROM.write(i, time[i / 2] % 256);
   }
-  for (int i = 1; i < 24; i += 2)
+  for (int i = 1; i < (LED_NUM * 2); i += 2)
   {
     EEPROM.write(i, time[i / 2] / 256);
   }
@@ -47,7 +47,7 @@ void LED_output(int step)
     time[index[i]] += 1;
   }
 
-  for (int i = step; i < 12; i++)
+  for (int i = step; i < LED_NUM; i++)
   {
     digitalWrite(index[i] + 2, LOW);
   }
@@ -57,15 +57,15 @@ void LED_output(int step)
 void LED_select(void)
 {
   //배열 복사
-  for (int i = 0; i < 12; i++)
+  for (int i = 0; i < LED_NUM; i++)
   {
     temp[i] = time[i];
   }
 
   //오름차순 정렬
-  for (int i = 0; i < 12; i++)
+  for (int i = 0; i < LED_NUM; i++)
   {
-    for (int j = 0; j < 11; j++ )
+    for (int j = 0; j < (LED_NUM - 1); j++ )
       if (temp[j] >= temp[j + 1])
       {
         int m = temp[j + 1];
@@ -74,9 +74,9 @@ void LED_select(void)
       }
   }
   //index 초기화
-  for (int i = 0; i < 12; i++)
+  for (int i = 0; i < LED_NUM; i++)
   {
-    for (int j = 0; j < 12; j++)
+    for (int j = 0; j < LED_NUM; j++)
     {
       if (time[i] == temp[j]) index[j] = i;
     }
@@ -86,10 +86,10 @@ void LED_select(void)
 //EEPROM 초기화
 void EEP_reset(void)
 {
-  for (int i = 0 ; i < 12 ; i++) {
+  for (int i = 0 ; i < LED_NUM ; i++) {
     EEPROM.write(i * 2, i);
   }
-  for (int i = 1; i < 24; i += 2)
+  for (int i = 1; i < (LED_NUM * 2); i += 2)
   {
     EEPROM.write(i, 0);
   }
@@ -98,7 +98,8 @@ void EEP_reset(void)
 /*----- setup() loop() 시작 -----*/
 
 void setup() {
-  for (int i = 0; i < 12; i++)
+  
+  for (int i = 0; i < LED_NUM; i++)
   {
     pinMode(i + 2, OUTPUT);
   }
@@ -112,6 +113,10 @@ void setup() {
   {
     EEP_load();
   }
+
+  //LED 선택
+  LED_select();
+  
   Serial.begin(9600);
 }
 
@@ -119,10 +124,7 @@ void loop() {
 
   int cdsValue;
   int min, max;
-
-  //LED 선택
-  LED_select();
-
+  
   cdsValue = analogRead(cds);
 
   //cds 값에 따른 LED 개수 설정
@@ -145,7 +147,7 @@ void loop() {
   max = EEPROM.read(0) + (EEPROM.read(1) * 256);
   min = EEPROM.read(0) + (EEPROM.read(1) * 256);
 
-  for (int i = 0; i < 12; i ++)
+  for (int i = 0; i < LED_NUM; i ++)
   {
     if ((EEPROM.read(i * 2) + (EEPROM.read((i * 2) + 1) * 256)) > max)
       max = EEPROM.read(i * 2) + (EEPROM.read((i * 2) + 1) * 256);
@@ -168,15 +170,16 @@ void loop() {
 
   //  Serial.println(cdsValue);
 
-  for (int i = 0; i < 12; i++)
+  for (int i = 0; i < LED_NUM; i++)
   {
     Serial.println(time[i]);
   }
 
-  Serial.println(" ");
-  Serial.println(max);
-  Serial.println(min);
-  Serial.println(" ");
 
-  delay(50);  //Lamp 동작 주기 설정
+  Serial.println(" ");
+//  Serial.println(max);
+//  Serial.println(min);
+//  Serial.println(" ");
+
+  delay(10);  //Lamp 동작 주기 설정
 }
