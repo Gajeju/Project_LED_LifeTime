@@ -1,4 +1,5 @@
 #include <EEPROM.h>
+#include <stdlib.h>
 
 /*----- 전역변수 -----*/
 
@@ -26,7 +27,7 @@ typedef union For_divide_union
 
 
 //LED 지정
-int index[LED_NUM] = {0,};
+int index[LED_NUM] = {0};
 
 /*----- 함수 -----*/
 
@@ -71,6 +72,21 @@ void LED_output(int step)
   }
 }
 
+//qsort를 위한 함수
+int compare(const void *a, const void *b)
+{
+    int num1 = *(int *)a;
+    int num2 = *(int *)b;
+
+    if (num1 < num2)
+        return -1;
+    
+    if (num1 > num2)
+        return 1;
+    
+    return 0;
+}
+
 //인덱스 초기화
 void LED_select(void)
 {
@@ -81,22 +97,14 @@ void LED_select(void)
   }
 
   //오름차순 정렬
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    for (int j = 0; j < (LED_NUM - 1); j++ )
-      if (temp[j] >= temp[j + 1])
-      {
-        int m = temp[j + 1];
-        temp[j + 1] = temp[j];
-        temp[j] = m;
-      }
-  }
+  qsort(temp, LED_NUM, sizeof(int), compare);
+  
   //index 초기화
   for (int i = 0; i < LED_NUM; i++)
   {
     for (int j = 0; j < LED_NUM; j++)
     {
-      if (time[i] == temp[j]) index[j] = i;
+       if (time[i] == temp[j]) index[j] = i;
     }
   }
 }
@@ -186,18 +194,22 @@ void loop() {
 
   //시리얼 통신을 이용하여 변수 체크
 
-  //  Serial.println(cdsValue);
+//    Serial.println(cdsValue);
 
   for (int i = 0; i < LED_NUM; i++)
   {
     Serial.println(time[i]);
   }
 
+//  for (int i = 0; i < LED_NUM; i++)
+//  {
+//    Serial.println(index[i]);
+//  }
 
   Serial.println(" ");
 //  Serial.println(max);
 //  Serial.println(min);
 //  Serial.println(" ");
 
-  delay(200);  //Lamp 동작 주기 설정
+  delay(500);  //Lamp 동작 주기 설정
 }
