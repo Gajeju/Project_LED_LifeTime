@@ -87,20 +87,6 @@ void ARR_remove()
   }
 }
 
-
-//EEPROM에서 시간데이터 로드
-void EEP_load(void)
-{
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    BBox store;
-
-    store.box.front = EEPROM.read(i*2);
-    store.box.back = EEPROM.read((i*2)+1); 
-    time[i] = store.timedata;
-  }
-}
-
 //EEPROM에 저장
 void EEP_store(void)
 {
@@ -114,44 +100,17 @@ void EEP_store(void)
   }
 }
 
-//LED 출력
-void LED_output(int step)
+//EEPROM에서 시간데이터 로드
+void EEP_load(void)
 {
-  for (int i = 0; i < step; i++)
-  {
-    digitalWrite(index[i] + 2, HIGH);
-    time[index[i]] += 1;
-  }
-
-  for (int i = step; i < LED_NUM; i++)
-  {
-    digitalWrite(index[i] + 2, LOW);
-  }
-}
-
-//인덱스 초기화
-void LED_select(void)
-{   
-  //배열 복사
   for (int i = 0; i < LED_NUM; i++)
   {
-    temp[i] = time[i];
+    BBox store;
+
+    store.box.front = EEPROM.read(i*2);
+    store.box.back = EEPROM.read((i*2)+1); 
+    time[i] = store.timedata;
   }
-
-  //오름차순 정렬
-  qsort(temp, LED_NUM, sizeof(int), ARR_compare);
-
-  //index 초기화
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    for (int j = 0; j < LED_NUM; j++)
-    {
-       if (time[i] == temp[j]) index[j] = i;
-    }
-  }
-
-  //중복 제거
-  ARR_remove();
 }
 
 void EEP_reset()
@@ -198,6 +157,46 @@ void EEP_delete(void)
   {
     EEPROM.write(i, 0);
   }
+}
+
+//LED 출력
+void LED_output(int step)
+{
+  for (int i = 0; i < step; i++)
+  {
+    digitalWrite(index[i] + 2, HIGH);
+    time[index[i]] += 1;
+  }
+
+  for (int i = step; i < LED_NUM; i++)
+  {
+    digitalWrite(index[i] + 2, LOW);
+  }
+}
+
+//인덱스 초기화
+void LED_select(void)
+{   
+  //배열 복사
+  for (int i = 0; i < LED_NUM; i++)
+  {
+    temp[i] = time[i];
+  }
+
+  //오름차순 정렬
+  qsort(temp, LED_NUM, sizeof(int), ARR_compare);
+
+  //index 초기화
+  for (int i = 0; i < LED_NUM; i++)
+  {
+    for (int j = 0; j < LED_NUM; j++)
+    {
+       if (time[i] == temp[j]) index[j] = i;
+    }
+  }
+
+  //중복 제거
+  ARR_remove();
 }
 
 /*----- setup() loop() 시작 -----*/
