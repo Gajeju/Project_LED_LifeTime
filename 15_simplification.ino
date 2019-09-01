@@ -260,14 +260,14 @@ void loop() {
     Serial.println(time[i]);
   }
 
-//  for (int i = 0; i < LED_NUM; i++)
-//  {
-//    Serial.println(index[i]);
-//  }
+ for (int i = 0; i < LED_NUM; i++)
+ {
+   Serial.println(index[i]);
+ }
 
-//  Serial.println(" ");
-//  Serial.println(max);
-//  Serial.println(min);
+ Serial.println(" ");
+ Serial.println(max);
+ Serial.println(min);
   Serial.println(" ");
 
   delay(300);  //Lamp 동작 주기 설정
