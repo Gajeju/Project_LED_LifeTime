@@ -1,19 +1,30 @@
-#define Point * LData
-#define LED_NUM
-#define TRUE 1
+#include <stdio.h>
+#include <stdlib.h>
+#include <EEPROM.h>
+
+#define TRUE  1
 #define FALSE 0
+#define LED_NUM 12
 
-typedef struct _point
+//데어터 저장공간
+
+typedef struct _Lifetime
 {
-  int timeData;
   int index;
-} Point;
+  short timeData;
+} Data;
 
-typedef struct _ArrayList
+typedef Data* LData;
+
+/*---------------------------------------------------------*/
+
+//리스트 구현
+
+typedef struct __ArrayList
 {
   LData arr[LED_NUM];
   int numOfData;
-  int curPositon;
+  int curPosition;  
 } ArrayList;
 
 typedef ArrayList List;
@@ -21,11 +32,15 @@ typedef ArrayList List;
 void ListInit(List* plist)
 {
   (plist->numOfData) = 0;
-  (plist->curPositon) = -1;
+  (plist->curPosition) = -1;
 }
 
 void LInsert(List* plist, LData data)
 {
+  if (plist->numOfData >= LED_NUM)
+  {
+    return;
+  }
   plist->arr[plist->numOfData] = data;
   (plist->numOfData)++;
 }
@@ -35,60 +50,62 @@ int LFirst(List* plist, LData* pdata)
   if (plist->numOfData == 0)
     return FALSE;
 
-  (plist->curPositon) = 0;
+  (plist->curPosition) = 0;
   *pdata = plist->arr[0];
   return TRUE;
 }
 
 int LNext(List* plist, LData* pdata)
 {
-  if (plist->curPositon >= (plist->numOfData) - 1)
+  if (plist->curPosition >= (plist->numOfData) - 1)
     return FALSE;
 
-  (plist->curPositon)++;
-  *pdata = plist->arr[plist->curPositon];
+  (plist->curPosition)++;
+  *pdata = plist->arr[plist->curPosition];
   return TRUE;
 }
 
-LData LRemove(List* plist)
+void LBubble(List* plist)
 {
-  int rpos = plist->curPositon;
-  int num = plist->numOfData;
-  LData rdata = plist->arr[rpos];
 
-  for (int i = rpos; i < num - 1; i++)
-    plist->arr[i] = plist->arr[i + 1];
-
-  (plist->numOfData)--;
-  (plist->curPositon)--;
-  return rdata;
 }
 
-//Timedata++
-void PAddTime(List* plist, int index)
+/*---------------------------------------------------------*/
+//구조체 접근 함수
+
+//데이터 초가화
+void SetTimeData(Data* plife, int rindex, short rtimeData)
 {
+  plife->index = rindex;
+  plife->timeData = rtimeData;
+}
+
+//데이터 증가
+void countTimeData(Data* plife)
+{
+  plife->timeData++;
+}
+
+//데이터 정렬
+void alignTimeData(Data* plifeFront,Data* plifeBack)
+{
+  Data* comp;
+  
+  if(plifeFront->timeData > plifeBack->timeData)
+  {
+    comp = plifeFront;
+    plifeFront = plifeBack;
+    plifeFront = comp;
+  }
+}
+
+/*---------------------------------------------------------*/
+void setup()
+    {
   
 }
 
-//정렬함수
-
-
-void setup() {
-//핀모드
-  for (int i = 0; i < LED_NUM; i++) 
-  {
-    pinMode(i+2, OUTPUT);
-  }
-
-//리스트 초기화(EEPROM)
-
-//정렬
-
-}
-
-void loop() {
-//조도센서
-
-//LED 출력(조도센서 개수에 따라)
-
+void loop()
+{
+  
 }
