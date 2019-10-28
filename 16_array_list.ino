@@ -1,23 +1,124 @@
-#include <EEPROM.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <EEPROM.h>
 #include <Wire.h>
 #include <BH1750.h>
 
-/*----- 전역변수 -----*/
-
+#define TRUE  1
+#define FALSE 0
 #define LED_NUM 12
 
-//2~13 핀 모두 LED로 사용
-int cds = A0;
 
-//데이터 공간
-unsigned int time[LED_NUM] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
-unsigned int temp[LED_NUM];
+//데어터 저장공간
+typedef struct _Lifetime
+{
+  int index;
+  short timeData;
+} Data;
 
-//LED 우선순위 저장
-int index[LED_NUM] = {0,};
+typedef Data* LData;
 
-//EEPROM 저장을 위한 공동체와 구조체
+/*---------------------------------------------------------*/
+
+//리스트 구현
+
+typedef struct __ArrayList
+{
+  LData arr[LED_NUM];
+  int numOfData;
+  int curPosition;
+} ArrayList;
+
+typedef ArrayList List;
+
+void ListInit(List* plist)
+{
+  (plist->numOfData) = 0;
+  (plist->curPosition) = -1;
+}
+
+void LInsert(List* plist, LData data)
+{
+  if (plist->numOfData >= LED_NUM)
+  {
+    return;
+  }
+  plist->arr[plist->numOfData] = data;
+  (plist->numOfData)++;
+}
+
+int LFirst(List* plist, LData* pdata)
+{
+  if (plist->numOfData == 0)
+    return FALSE;
+
+  (plist->curPosition) = 0;
+  *pdata = plist->arr[0];
+  return TRUE;
+}
+
+int LNext(List* plist, LData* pdata)
+{
+  if (plist->curPosition >= (plist->numOfData) - 1)
+    return FALSE;
+
+  (plist->curPosition)++;
+  *pdata = plist->arr[plist->curPosition];
+  return TRUE;
+}
+
+//데이터 정렬
+void LBubble(List* plist)
+{
+  Data* comp;
+
+  for (int i = 0; i < LED_NUM; i++)
+  {
+    for (int j = 0; j < LED_NUM - 1; j++)
+    {
+      if (plist->arr[i]->timeData < plist->arr[j]->timeData)
+      {
+        comp = plist->arr[i];
+        plist->arr[i] = plist->arr[j];
+        plist->arr[j] = comp;
+      }
+    }
+  }
+}
+
+/*---------------------------------------------------------*/
+//구조체 접근 함수
+
+//데이터 초가화
+void SetTimeData(Data* plife, int rindex, short rtimeData)
+{
+  plife->index = rindex;
+  plife->timeData = rtimeData;
+}
+
+//데이터 증가
+void countTimeData(List* plist, int index)
+{
+  plist->arr[index]->timeData++;
+}
+
+//LED 출력
+void outTimeData(List* plist, int ledStep)
+{
+  for (int i = 0; i < ledStep; i++)
+  {
+    digitalWrite(plist->arr[i]->index, HIGH);
+    countTimeData(plist, i);
+  }
+
+  for (int i = ledStep; i < LED_NUM; i++)
+  {
+    digitalWrite(plist->arr[i]->index, LOW);
+  }
+}
+/*---------------------------------------------------------*/
+//EEPROM
+
 typedef struct For_divide_struct
 {
   byte front;
@@ -30,166 +131,61 @@ typedef union For_divide_union
   SBox box;
 } BBox;
 
-//BH1750 조도센서
-BH1750 lightMeter;
-
-/*----- 함수 -----*/
-
-//qsort를 위한 함수
-int ARR_compare(const void *a, const void *b)
-{
-  int num1 = *(int *)a;
-  int num2 = *(int *)b;
-
-  if (num1 < num2)
-    return -1;
-
-  if (num1 > num2)
-    return 1;
-
-  return 0;
-}
-
-//중복제거 함수
-void ARR_remove()
-{
-  int same[LED_NUM] = {0,};
-
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    for (int j = 0; j < LED_NUM; j++)
-    {
-      if (index[i] == j) same[j] ++;
-    }
-  }
-
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    if (same[i] > 1)
-    {
-      int ty = 0;
-      int* arr = (int*)malloc(sizeof(int) * same[i]);
-
-      for (int j = 0; j < LED_NUM; j++)
-      {
-        if (time[i] == time[j])
-        {
-          arr[ty] = j;
-          ty++;
-        }
-      }
-
-      for (int j = 0; j < LED_NUM; j++)
-      {
-        if (index[j] == i)
-        {
-          ty--;
-          index[j] = arr[ty];
-        }
-      }
-      free(arr);
-    }
-  }
-}
-
-
-//EEPROM에서 시간데이터 로드
-void EEP_load(void)
+void EEP_load(List* plist)
 {
   for (int i = 0; i < LED_NUM; i++)
   {
-    BBox store;
+    BBox load;
 
-    store.box.front = EEPROM.read(i * 2);
-    store.box.back = EEPROM.read((i * 2) + 1);
-    time[i] = store.timedata;
+    load.box.front = EEPROM.read(i * 2);
+    load.box.back = EEPROM.read((i * 2) + 1);
+    plist->arr[i]->timeData = load.timedata;
   }
 }
 
-//EEPROM에 저장
-void EEP_store(void)
+void EEP_store(List* plist)
 {
   for (int i = 0; i < LED_NUM; i++)
   {
-    BBox store;
-    store.timedata = time[i];
+    BBox save;
+    save.timedata = plist->arr[i]->timeData;
 
-    EEPROM.write((i * 2), store.box.front);
-    EEPROM.write(((i * 2) + 1), store.box.back);
+    EEPROM.write((i * 2), save.box.front);
+    EEPROM.write(((i * 2) + 1), save.box.back);
   }
 }
 
-//LED 출력
-void LED_output(int step)
-{
-  for (int i = 0; i < step; i++)
-  {
-    digitalWrite(index[i] + 2, HIGH);
-    time[index[i]] += 1;
-  }
-
-  for (int i = step; i < LED_NUM; i++)
-  {
-    digitalWrite(index[i] + 2, LOW);
-  }
-}
-
-//인덱스 초기화
-void LED_select(void)
-{
-  //배열 복사
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    temp[i] = time[i];
-  }
-
-  //오름차순 정렬
-  qsort(temp, LED_NUM, sizeof(int), ARR_compare);
-
-  //index 초기화
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    for (int j = 0; j < LED_NUM; j++)
-    {
-      if (time[i] == temp[j]) index[j] = i;
-    }
-  }
-
-  //중복 제거
-  ARR_remove();
-}
-
-void EEP_reset()
+void EEP_reset(List* plist)
 {
   int min, max;
-  BBox store;
+  BBox save;
 
-  store.box.front = EEPROM.read(0);
-  store.box.back  = EEPROM.read(1);
+  save.box.front = EEPROM.read(0);
+  save.box.back  = EEPROM.read(1);
 
-  max = store.timedata;
-  min = store.timedata;
+  max = save.timedata;
+  min = save.timedata;
 
   for (int i = 0; i < LED_NUM; i ++)
   {
-    store.box.front = EEPROM.read(i * 2);
-    store.box.back  = EEPROM.read((i * 2) + 1);
+    save.box.front = EEPROM.read(i * 2);
+    save.box.back  = EEPROM.read((i * 2) + 1);
 
-    if (store.timedata > max)
-      max = store.timedata;
-    if (store.timedata < min)
-      min =  store.timedata;
+    if (save.timedata > max)
+      max = save.timedata;
+    if (save.timedata < min)
+      min =  save.timedata;
   }
 
   if (max > 300 && (max - min) < (max / 5) )
   {
     EEP_delete();
-    EEP_load();
+    EEP_load(plist);
   }
   else if (max == 60000)
   {
     EEP_delete();
-    EEP_load();
+    EEP_load(plist);
   }
 }
 
@@ -205,82 +201,91 @@ void EEP_delete(void)
   }
 }
 
-/*----- setup() loop() 시작 -----*/
+/*---------------------------------------------------------*/
+List list;
+Data* plife;
+BH1750 lightMeter;
 
-void setup() {
-
+void setup()
+{
   for (int i = 0; i < LED_NUM; i++)
   {
     pinMode(i + 2, OUTPUT);
   }
 
-  pinMode(A0, INPUT_PULLUP);
+  ListInit(&list);
+
+  for (int i = 0; i < LED_NUM; i++)
+  {
+    plife = (Data*)malloc(sizeof(Data));
+    SetTimeData(plife, i + 2, i);
+    LInsert(&list, plife);
+  }
 
   if (EEPROM.read(0))
   {
-    EEP_load();
+    EEP_load(&list);
   }
 
-  //LED 선택
-  LED_select();
+  LBubble(&list);
 
-  Serial.begin(9600);
   Wire.begin();
   lightMeter.begin(0x23);
+
+  pinMode(A0, INPUT_PULLUP);
+  Serial.begin(9600);
 }
 
-void loop() {
-
-  uint16_t cdsValue = lightMeter.readLightLevel();
+void loop()
+{
   int sw = digitalRead(A0);
+  //uint16_t cdsValue = lightMeter.readLightLevel();
+uint16_t cdsValue  = 2500;
+  
+  if      (cdsValue >= 0 && cdsValue < 300)      outTimeData(&list, 12);
+  else if (cdsValue >= 300 && cdsValue < 600 )    outTimeData(&list, 11);
+  else if (cdsValue >= 600 && cdsValue < 900)   outTimeData(&list, 10);
+  else if (cdsValue >= 900 && cdsValue < 1200)   outTimeData(&list, 9);
+  else if (cdsValue >= 1200 && cdsValue < 1500)   outTimeData(&list, 8);
+  else if (cdsValue >= 1500 && cdsValue < 1800)   outTimeData(&list, 7);
+  else if (cdsValue >= 1800 && cdsValue < 2100)   outTimeData(&list, 6);
+  else if (cdsValue >= 2100 && cdsValue < 2400)   outTimeData(&list, 5);
+  else if (cdsValue >= 2400 && cdsValue < 2700)   outTimeData(&list, 4);
+  else if (cdsValue >= 2700 && cdsValue < 3000)   outTimeData(&list, 3);
+  else if (cdsValue >= 3000 && cdsValue < 3300)   outTimeData(&list, 2);
+  else outTimeData(&list, 1);
 
-  //cds 값에 따른 LED 개수 설정
-  if      (cdsValue >= 0 && cdsValue < 300)      LED_output(12);
-  else if (cdsValue >= 300 && cdsValue < 600 )    LED_output(11);
-  else if (cdsValue >= 600 && cdsValue < 900)   LED_output(10);
-  else if (cdsValue >= 900 && cdsValue < 1200)   LED_output(9);
-  else if (cdsValue >= 1200 && cdsValue < 1500)   LED_output(8);
-  else if (cdsValue >= 1500 && cdsValue < 1800)   LED_output(7);
-  else if (cdsValue >= 1800 && cdsValue < 2100)   LED_output(6);
-  else if (cdsValue >= 2100 && cdsValue < 2400)   LED_output(5);
-  else if (cdsValue >= 2400 && cdsValue < 2700)   LED_output(4);
-  else if (cdsValue >= 2700 && cdsValue < 3000)   LED_output(3);
-  else if (cdsValue >= 3000 && cdsValue < 3300)   LED_output(2);
-  else LED_output(1);
+  EEP_store(&list);
+  EEP_reset(&list);
 
-  //변경된 time[] 배열 저장
-  EEP_store();
-
-  //EEPROM 초기화
-  EEP_reset();
-
-  if (sw == 0)  
+  if (sw == 0)
   {
     EEP_delete();
-    EEP_load();
+    EEP_load(&list);
   }
-  
-  //시리얼 통신을 이용하여 변수 체크
+  /*---------------------------------------------------------*/
 
-   Serial.println(cdsValue);
+  //Serial.println(cdsValue);
 
-//    for (int i = 0; i < LED_NUM; i++)
-//    {
-//      Serial.println(time[i]);
-//    }
-
-  //  for (int i = 0; i < LED_NUM; i++)
+  //  if (LFirst(&list, &plife))
   //  {
-  //    Serial.println(index[i]);
+  //    Serial.println(plife->index);
+  //    Serial.println(plife->timeData);
+  //    Serial.println("");
+  //
+  //    while (LNext(&list, &plife))
+  //    {
+  //      Serial.println(plife->index);
+  //      Serial.println(plife->timeData);
+  //      Serial.println("");
+  //    }
   //  }
 
-  //  Serial.println(" ");
-  //  Serial.println(max);
-  //  Serial.println(min);
+  for (int i = 0; i < LED_NUM; i++)
+  {
+    Serial.println(EEPROM.read(i * 2));
+  }
 
-  //Serial.println(sw);
-  
-  Serial.println(" ");
-
-  delay(500);  //Lamp 동작 주기 설정
+  Serial.println("");
+  delay(500);
 }
