@@ -8,7 +8,6 @@
 #define FALSE 0
 #define LED_NUM 12
 
-
 //데어터 저장공간
 typedef struct _Lifetime
 {
@@ -97,9 +96,9 @@ void SetTimeData(Data* plife, int rindex, short rtimeData)
 }
 
 //데이터 증가
-void countTimeData(List* plist, int index)
+void countTimeData(Data* plife)
 {
-  plist->arr[index]->timeData++;
+  plife->timeData++;
 }
 
 //LED 출력
@@ -108,7 +107,7 @@ void outTimeData(List* plist, int ledStep)
   for (int i = 0; i < ledStep; i++)
   {
     digitalWrite(plist->arr[i]->index, HIGH);
-    countTimeData(plist, i);
+    countTimeData(plist->arr[i]);
   }
 
   for (int i = ledStep; i < LED_NUM; i++)
@@ -127,27 +126,29 @@ typedef struct For_divide_struct
 
 typedef union For_divide_union
 {
-  unsigned int timedata;
+  short timedata;
   SBox box;
 } BBox;
 
 void EEP_load(List* plist)
 {
+  BBox load;
+  
   for (int i = 0; i < LED_NUM; i++)
   {
-    BBox load;
-
     load.box.front = EEPROM.read(i * 2);
     load.box.back = EEPROM.read((i * 2) + 1);
     plist->arr[i]->timeData = load.timedata;
   }
 }
 
+
 void EEP_store(List* plist)
 {
+  BBox save;
+  
   for (int i = 0; i < LED_NUM; i++)
   {
-    BBox save;
     save.timedata = plist->arr[i]->timeData;
 
     EEPROM.write((i * 2), save.box.front);
@@ -189,7 +190,7 @@ void EEP_reset(List* plist)
   }
 }
 
-//EEPROM 초기화
+////EEPROM 초기화
 void EEP_delete(void)
 {
   for (int i = 0 ; i < LED_NUM ; i++) {
@@ -221,7 +222,7 @@ void setup()
     SetTimeData(plife, i + 2, i);
     LInsert(&list, plife);
   }
-
+    
   if (EEPROM.read(0))
   {
     EEP_load(&list);
@@ -240,8 +241,8 @@ void loop()
 {
   int sw = digitalRead(A0);
   //uint16_t cdsValue = lightMeter.readLightLevel();
-uint16_t cdsValue  = 2500;
-  
+  uint16_t cdsValue  = 2500;
+
   if      (cdsValue >= 0 && cdsValue < 300)      outTimeData(&list, 12);
   else if (cdsValue >= 300 && cdsValue < 600 )    outTimeData(&list, 11);
   else if (cdsValue >= 600 && cdsValue < 900)   outTimeData(&list, 10);
@@ -267,24 +268,25 @@ uint16_t cdsValue  = 2500;
 
   //Serial.println(cdsValue);
 
-  //  if (LFirst(&list, &plife))
-  //  {
-  //    Serial.println(plife->index);
-  //    Serial.println(plife->timeData);
-  //    Serial.println("");
-  //
-  //    while (LNext(&list, &plife))
-  //    {
-  //      Serial.println(plife->index);
-  //      Serial.println(plife->timeData);
-  //      Serial.println("");
-  //    }
-  //  }
+    if (LFirst(&list, &plife))
+    {
+      Serial.println(plife->index);
+      Serial.println(plife->timeData);
+      Serial.println("");
+  
+      while (LNext(&list, &plife))
+      {
+        Serial.println(plife->index);
+        Serial.println(plife->timeData);
+        Serial.println("");
+      }
+    }
 
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    Serial.println(EEPROM.read(i * 2));
-  }
+//  for (int i = 0; i < LED_NUM; i++)
+//  {
+//    Serial.println(EEPROM.read(i * 2));
+//    Serial.println(EEPROM.read((i * 2)+1));
+//  }
 
   Serial.println("");
   delay(500);
