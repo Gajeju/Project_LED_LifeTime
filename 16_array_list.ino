@@ -133,30 +133,46 @@ typedef union For_divide_union
 void EEP_load(List* plist)
 {
   BBox load;
-  
-  for (int i = 0; i < LED_NUM; i++)
+  Data* plife;
+
+  if (LFirst(plist, &plife))
   {
-    load.box.front = EEPROM.read(i * 2);
-    load.box.back = EEPROM.read((i * 2) + 1);
-    plist->arr[i]->timeData = load.timedata;
+    load.box.front = EEPROM.read(plist->curPosition * 2);
+    load.box.back = EEPROM.read((plist->curPosition * 2) + 1);
+    plist->arr[plist->curPosition]->timeData = load.timedata;
+
+    while (LNext(plist, &plife))
+    {
+      load.box.front = EEPROM.read(plist->curPosition * 2);
+      load.box.back = EEPROM.read((plist->curPosition * 2) + 1);
+      plist->arr[plist->curPosition]->timeData = load.timedata;
+
+    }
   }
 }
 
-
-void EEP_store(List* plist)
+void EEP_store(List * plist)
 {
   BBox save;
-  
-  for (int i = 0; i < LED_NUM; i++)
-  {
-    save.timedata = plist->arr[i]->timeData;
+  Data* plife;
 
-    EEPROM.write((i * 2), save.box.front);
-    EEPROM.write(((i * 2) + 1), save.box.back);
+  if (LFirst(plist, &plife))
+  {
+    save.timedata = plist->arr[plist->curPosition]->timeData;
+    EEPROM.write((plist->curPosition * 2), save.box.front);
+    EEPROM.write(((plist->curPosition * 2) + 1), save.box.back);
+
+    while (LNext(plist, &plife))
+    {
+      save.timedata = plist->arr[plist->curPosition]->timeData;
+      EEPROM.write((plist->curPosition * 2), save.box.front);
+      EEPROM.write(((plist->curPosition * 2) + 1), save.box.back);
+
+    }
   }
 }
 
-void EEP_reset(List* plist)
+void EEP_reset(List * plist)
 {
   int min, max;
   BBox save;
@@ -222,7 +238,7 @@ void setup()
     SetTimeData(plife, i + 2, i);
     LInsert(&list, plife);
   }
-    
+
   if (EEPROM.read(0))
   {
     EEP_load(&list);
@@ -268,25 +284,24 @@ void loop()
 
   //Serial.println(cdsValue);
 
-    if (LFirst(&list, &plife))
-    {
-      Serial.println(plife->index);
-      Serial.println(plife->timeData);
-      Serial.println("");
-  
-      while (LNext(&list, &plife))
-      {
-        Serial.println(plife->index);
-        Serial.println(plife->timeData);
-        Serial.println("");
-      }
-    }
-
-//  for (int i = 0; i < LED_NUM; i++)
+//  if (LFirst(&list, &plife))
 //  {
-//    Serial.println(EEPROM.read(i * 2));
-//    Serial.println(EEPROM.read((i * 2)+1));
+//    Serial.println(plife->index);
+//    Serial.println(plife->timeData);
+//    Serial.println("");
+//
+//    while (LNext(&list, &plife))
+//    {
+//      Serial.println(plife->index);
+//      Serial.println(plife->timeData);
+//      Serial.println("");
+//    }
 //  }
+
+    for (int i = 0; i < LED_NUM; i++)
+    {
+      Serial.println(EEPROM.read(i * 2));
+    }
 
   Serial.println("");
   delay(500);
