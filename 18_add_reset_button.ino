@@ -92,7 +92,6 @@ void ARR_remove()
   }
 }
 
-
 //EEPROM에서 시간데이터 로드
 void EEP_load(void)
 {
