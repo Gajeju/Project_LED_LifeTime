@@ -10,6 +10,7 @@ int cds = A0;
 
 //데이터 공간
 
+
 int time[4] = {0, 1, 2, 3};
 int temp[4];
 
